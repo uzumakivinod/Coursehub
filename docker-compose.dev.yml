@@ -1,0 +1,65 @@
+version: "3.9"
+
+# ──────────────────────────────────────────────────────────
+#  FreeCourseHub — Development Compose (hot-reload)
+#  Usage: docker compose -f docker-compose.dev.yml up
+# ──────────────────────────────────────────────────────────
+
+networks:
+  dev_net:
+    driver: bridge
+
+services:
+
+  redis:
+    image: redis:7.2-alpine
+    container_name: fch_redis_dev
+    ports:
+      - "6379:6379"
+    networks:
+      - dev_net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: deps          # only install deps layer
+    container_name: fch_backend_dev
+    command: npx nodemon src/server.js
+    volumes:
+      - ./backend/src:/app/src:ro   # hot-reload
+    environment:
+      NODE_ENV: development
+      PORT: "5000"
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      LOG_LEVEL: debug
+      FRONTEND_URL: "http://localhost:3000"
+    ports:
+      - "5000:5000"
+    networks:
+      - dev_net
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  worker:
+    build:
+      context: ./worker
+      dockerfile: Dockerfile
+    container_name: fch_worker_dev
+    command: node src/index.js
+    environment:
+      NODE_ENV: development
+      BACKEND_URL: http://backend:5000
+      LOG_LEVEL: debug
+    networks:
+      - dev_net
+    depends_on:
+      - backend
+    restart: unless-stopped

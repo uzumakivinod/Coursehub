@@ -1,0 +1,169 @@
+version: "3.9"
+
+# ──────────────────────────────────────────────────────────
+#  FreeCourseHub — Docker Compose
+#  Services: nginx · frontend · backend (×2) · redis · worker
+# ──────────────────────────────────────────────────────────
+
+networks:
+  app_net:
+    driver: bridge
+
+volumes:
+  redis_data:
+
+# ── Shared backend config (DRY) ───────────────────────────
+x-backend-common: &backend-common
+  build:
+    context: ./backend
+    dockerfile: Dockerfile
+  env_file: ./backend/.env
+  environment:
+    NODE_ENV: production
+    REDIS_HOST: redis
+    REDIS_PORT: 6379
+  networks:
+    - app_net
+  depends_on:
+    redis:
+      condition: service_healthy
+  restart: unless-stopped
+  deploy:
+    resources:
+      limits:
+        memory: 256m
+        cpus: "0.5"
+
+services:
+
+  # ── Redis ─────────────────────────────────────────────
+  redis:
+    image: redis:7.2-alpine
+    container_name: fch_redis
+    command: >
+      redis-server
+      --maxmemory 128mb
+      --maxmemory-policy allkeys-lru
+      --save 60 100
+      --appendonly no
+    volumes:
+      - redis_data:/data
+    networks:
+      - app_net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          memory: 192m
+          cpus: "0.25"
+
+  # ── Backend replica 1 ─────────────────────────────────
+  backend1:
+    <<: *backend-common
+    container_name: fch_backend1
+    environment:
+      NODE_ENV: production
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      PORT: "5000"
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/api/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+  # ── Backend replica 2 ─────────────────────────────────
+  backend2:
+    <<: *backend-common
+    container_name: fch_backend2
+    environment:
+      NODE_ENV: production
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      PORT: "5000"
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/api/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+  # ── Frontend ──────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: fch_frontend
+    networks:
+      - app_net
+    depends_on:
+      - backend1
+      - backend2
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          memory: 64m
+          cpus: "0.1"
+
+  # ── Nginx Reverse Proxy ───────────────────────────────
+  nginx:
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+    container_name: fch_nginx
+    ports:
+      - "3001:80"
+    networks:
+      - app_net
+    depends_on:
+      frontend:
+        condition: service_healthy
+      backend1:
+        condition: service_healthy
+      backend2:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          memory: 64m
+          cpus: "0.1"
+
+  # ── Worker (data pipeline) ────────────────────────────
+  worker:
+    build:
+      context: ./worker
+      dockerfile: Dockerfile
+    container_name: fch_worker
+    env_file: ./worker/.env
+    environment:
+      NODE_ENV: production
+      BACKEND_URL: http://nginx/api
+    networks:
+      - app_net
+    depends_on:
+      - backend1
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 128m
+          cpus: "0.25"

@@ -1,0 +1,141 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  *, *::before, *::after { box-sizing: border-box; }
+
+  html {
+    scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background-color: #f8fafc;
+    color: #0f172a;
+    min-height: 100vh;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Syne', sans-serif;
+  }
+
+  /* Global placeholder color — avoids needing @tailwindcss/forms plugin */
+  input::placeholder,
+  textarea::placeholder {
+    color: #94a3b8; /* slate-400 / surface-400 */
+  }
+}
+
+@layer components {
+  /* ── Buttons ─────────────────────────────────────────── */
+  .btn-primary {
+    @apply inline-flex items-center gap-2 px-5 py-2.5 bg-brand-500 hover:bg-brand-600
+           text-white font-semibold rounded-xl transition-all duration-200
+           shadow-md active:scale-95 text-sm;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .btn-primary:hover {
+    box-shadow: 0 4px 16px rgba(11,165,236,.2), 0 2px 8px rgba(0,0,0,.1);
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center gap-2 px-5 py-2.5 bg-white hover:bg-slate-50
+           text-slate-800 font-semibold rounded-xl border border-slate-200
+           hover:border-brand-300 transition-all duration-200 text-sm;
+    font-family: 'DM Sans', sans-serif;
+  }
+
+  /* ── Cards ───────────────────────────────────────────── */
+  .card {
+    @apply bg-white rounded-2xl border border-slate-100
+           transition-all duration-300 hover:-translate-y-0.5;
+    box-shadow: 0 1px 3px rgba(0,0,0,.08), 0 8px 24px rgba(0,0,0,.06);
+  }
+  .card:hover {
+    box-shadow: 0 4px 16px rgba(11,165,236,.2), 0 2px 8px rgba(0,0,0,.1);
+  }
+
+  /* ── Badge ───────────────────────────────────────────── */
+  .badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold;
+  }
+
+  /* ── Inputs ──────────────────────────────────────────── */
+  .input-search {
+    @apply w-full bg-white border border-slate-200 rounded-xl px-4 py-3
+           text-slate-900 text-sm
+           focus:outline-none focus:ring-2 focus:ring-brand-400 focus:border-transparent
+           transition-all duration-200;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .input-search::placeholder {
+    color: #94a3b8; /* slate-400 */
+  }
+
+  .select-filter {
+    @apply bg-white border border-slate-200 rounded-xl px-3 py-2.5
+           text-slate-700 text-sm
+           focus:outline-none focus:ring-2 focus:ring-brand-400 focus:border-transparent
+           cursor-pointer transition-all duration-200;
+    font-family: 'DM Sans', sans-serif;
+  }
+
+  /* ── Skeleton loader ─────────────────────────────────── */
+  .skeleton {
+    @apply rounded-lg animate-shimmer;
+    background: linear-gradient(90deg, #f1f5f9 25%, #f8fafc 50%, #f1f5f9 75%);
+    background-size: 200% 100%;
+  }
+
+  /* ── Tag chip ────────────────────────────────────────── */
+  .tag-chip {
+    @apply inline-flex items-center px-2 py-0.5 bg-brand-50 text-brand-700
+           rounded-md text-xs font-medium border border-brand-100
+           hover:bg-brand-100 transition-colors cursor-pointer;
+  }
+}
+
+@layer utilities {
+  /* ── Text gradient ───────────────────────────────────── */
+  .text-gradient {
+    background: linear-gradient(135deg, #0ba5ec, #8b5cf6);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* ── Glassmorphism ───────────────────────────────────── */
+  .glass {
+    background: rgba(255,255,255,0.8);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255,255,255,0.5);
+  }
+
+  /* ── Hero background ─────────────────────────────────── */
+  .hero-grid {
+    background-image:
+      radial-gradient(circle at 20% 50%, rgba(11,165,236,.12) 0%, transparent 50%),
+      radial-gradient(circle at 80% 20%, rgba(139,92,246,.1) 0%, transparent 40%),
+      linear-gradient(135deg, #f0f9ff 0%, #f8fafc 50%, #faf5ff 100%);
+  }
+
+  /* ── Shadow utilities (mirroring tailwind.config extensions) */
+  .shadow-card {
+    box-shadow: 0 1px 3px rgba(0,0,0,.08), 0 8px 24px rgba(0,0,0,.06);
+  }
+  .shadow-hover {
+    box-shadow: 0 4px 16px rgba(11,165,236,.2), 0 2px 8px rgba(0,0,0,.1);
+  }
+  .shadow-glow {
+    box-shadow: 0 0 32px rgba(11,165,236,.35);
+  }
+
+  /* ── Custom scrollbar ────────────────────────────────── */
+  .scrollbar-thin::-webkit-scrollbar { width: 4px; }
+  .scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
+  .scrollbar-thin::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+}
